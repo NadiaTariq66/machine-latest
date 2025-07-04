@@ -279,81 +279,20 @@
             </div>
   
             <!-- Income Statement Section -->
-            <div class="mb-8" *ngFor="let f of balanceSheetTable; let i = index">
+            <div class="mb-8" *ngFor="let f of financials;let i = index">
                 <div class="overflow-x-auto">
                   <table class="table table-dark table w-full min-w-max">
                     <thead>
                       <tr class="table-header">
-                        <th class="table-cell text-left d-flex align-items-center gap-3">
-                          <span></span> {{f.table_label}}
-                        </th>
-                        <!-- <th *ngFor="let heading of f.headers" class="table-cell text-right" style="padding-right: 38px;">
-                          {{ heading.year }} FY
+                        <!-- <th class="table-cell text-left">Label</th>
+                        <th *ngFor="let heading of f.headers" class="table-cell text-right">
+                          {{ heading.year }}
                         </th> -->
                       </tr>
                     </thead>
                     <tbody>
-                      <!-- For Assets (generic) -->
-                      <ng-container *ngIf="f.table_label !== 'Liabilities and Equity'">
-                        <ng-container *ngFor="let section of f.children">
-                          <tr>
-                            <td class="td-box" [attr.colspan]="f.headers.length + 1"
-                                style="font-weight: bold; background: #23232b; color: #fff; border-top: 2px solid #444;">
-                              {{ section.row_head_label }}
-                            </td>
-                          </tr>
-                          <tr *ngFor="let row of section.children">
-                            <td class="td-box" style="padding-left: 32px; background: #18181b; color: #fff;">
-                              {{ row.row_head_label }}
-                            </td>
-                            <td *ngFor="let value of row.data; let i = index; let last = last"
-                              class="table-cell text-right pointer"
-                              [style.color]="+value < 0 ? '#f87171' : '#60a5fa'"
-                              (click)="openCapIQPopup(content, row, i === 0 ? 2023 : (last ? 2024 : null))">
-                              {{ value | formatNumber:'millions' }}
-                            </td>
-                          </tr>
-                        </ng-container>
-                      </ng-container>
-                      <!-- For Liabilities and Equity (custom nested) -->
-                      <ng-container *ngIf="f.table_label === 'Liabilities and Equity'">
-                        <ng-container *ngFor="let section of f.children">
-                          <tr>
-                            <td class="td-box" [attr.colspan]="f.headers.length + 1"
-                                style="font-weight: bold; background: #23232b; color: #fff; border-top: 2px solid #444;">
-                              {{ section.row_head_label }}
-                            </td>
-                          </tr>
-                          <!-- Liabilities: has further children, Equity: direct rows -->
-                          <ng-container *ngIf="section.row_head_label === 'Liabilities'">
-                            <ng-container *ngFor="let subSection of section.children">
-                              <tr>
-                                <td class="td-box" [attr.colspan]="f.headers.length + 1"
-                                style="font-weight: bold; background: #23232b; color: #fff; border-top: 2px solid #444;">
-                              {{ section.row_head_label }}
-                            </td>
-                              </tr>
-                              <tr *ngFor="let row of subSection.children">
-                                <td class="td-box" style="padding-left: 32px; background: #18181b; color: #fff;">
-                                  {{ row.row_head_label }}
-                                </td>
-                                <td *ngFor="let value of row.data; let i = index; let last = last" class="table-cell text-right" [style.color]="+value < 0 ? '#f87171' : '#60a5fa'" (click)="openCapIQPopup(content, row, i === 0 ? 2023 : (last ? 2024 : null))">
-                                  {{ value | formatNumber:'millions' }}
-                                </td>
-                              </tr>
-                            </ng-container>
-                          </ng-container>
-                          <ng-container *ngIf="section.row_head_label === 'Equity'">
-                            <tr *ngFor="let row of section.children">
-                              <td class="td-box" style="padding-left: 32px; background: #18181b; color: #fff;">
-                                {{ row.row_head_label }}
-                              </td>
-                              <td *ngFor="let value of row.data; let i = index; let last = last" class="table-cell text-right" [style.color]="+value < 0 ? '#f87171' : '#60a5fa'" (click)="openCapIQPopup(content, row, i === 0 ? 2023 : (last ? 2024 : null))">
-                                {{ value | formatNumber:'millions' }}
-                              </td>
-                            </tr>
-                          </ng-container>
-                        </ng-container>
+                      <ng-container *ngFor="let row of f.data">
+                        <ng-container *ngTemplateOutlet="renderRow; context: { $implicit: row, headers: f.headers, level: 0 }"></ng-container>
                       </ng-container>
                     </tbody>
                   </table>
@@ -386,3 +325,23 @@
       </div>
   </ng-template>
   
+<!-- Recursive row rendering template -->
+<ng-template #renderRow let-row let-headers="headers" let-level="level">
+  <tr>
+    <td [style.paddingLeft.px]="level * 20" style="background: #23232b; color: #fff;">
+      {{ row.row_head_label }}
+    </td>
+    <td *ngFor="let value of row.data; let i = index; let last = last"
+        class="table-cell text-right pointer"
+        [style.color]="+value < 0 ? '#f87171' : '#60a5fa'"
+        (click)="openCapIQPopup(content, row, headers[i].year)">
+      {{ value | formatNumber:'millions' }}
+    </td>
+  </tr>
+  <ng-container *ngIf="row.children">
+    <ng-container *ngFor="let child of row.children">
+      <ng-container *ngTemplateOutlet="renderRow; context: { $implicit: child, headers: headers, level: level + 1 }"></ng-container>
+    </ng-container>
+  </ng-container>
+</ng-template>
+ 
